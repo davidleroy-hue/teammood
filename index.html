@@ -4,7 +4,1245 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Team Mood Tracker | L'humeur de l'équipe</title>
+    <!-- Tailwind CSS CDN --><!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Mood Tracker | L'humeur de l'équipe</title>
     <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            200: '#c7d2fe',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Smooth transitions */
+        .mood-card {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .mood-card:hover {
+            transform: translateY(-2px);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body class="min-h-full flex flex-col font-sans text-slate-800 antialiased selection:bg-indigo-500 selection:text-white">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Modal Changement d'identité / Nom -->
+    <div id="identity-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 transform transition-all border border-slate-100">
+            <div class="flex justify-end mb-3">
+                <div class="lang-switch flex items-center rounded-full bg-slate-100 border border-slate-200/80 p-0.5 text-xs font-bold" role="group" aria-label="Language">
+                <button type="button" data-lang="fr" onclick="setLang('fr')" class="px-2.5 py-1 rounded-full transition">FR</button>
+                <button type="button" data-lang="en" onclick="setLang('en')" class="px-2.5 py-1 rounded-full transition">EN</button>
+            </div>
+            </div>
+            <div class="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-5 mx-auto text-2xl shadow-inner">
+                ✨
+            </div>
+            <h3 data-i18n="id.title" class="text-xl font-bold text-slate-900 text-center mb-1">Qui es-tu dans l'équipe ?</h3>
+            <p data-i18n="id.desc" class="text-sm text-slate-500 text-center mb-6">Entre ton prénom pour partager ton humeur et réagir aux messages de tes collègues.</p>
+            
+            <form id="identity-form" onsubmit="handleSaveIdentity(event)">
+                <div class="mb-5">
+                    <label data-i18n="id.label" for="user-name-input" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Ton prénom ou pseudo</label>
+                    <div class="relative">
+                        <input type="text" id="user-name-input" required maxlength="30" data-i18n-placeholder="id.placeholder" placeholder="Ex: Thomas, Sarah, Alex..."
+                            class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition font-medium text-slate-800 placeholder-slate-400">
+                    </div>
+                </div>
+
+                <div class="flex gap-3">
+                    <button type="button" id="identity-cancel-btn" onclick="toggleIdentityModal(false)" class="flex-1 py-3 px-4 rounded-xl border border-slate-200 text-slate-600 font-semibold hover:bg-slate-50 transition hidden">
+                        <span data-i18n="id.cancel">Annuler</span>
+                    </button>
+                    <button type="submit" class="flex-1 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-lg shadow-indigo-200 transition">
+                        <span data-i18n="id.continue">Continuer</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Header Navigation -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-18 py-3 flex items-center justify-between gap-4">
+            <!-- Logo & Title -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-100 text-xl font-bold">
+                    🌤️
+                </div>
+                <div>
+                    <h1 class="text-base sm:text-lg font-bold text-slate-900 leading-tight">Team Mood Tracker</h1>
+                    <p data-i18n="app.tagline" class="text-xs text-slate-500 hidden sm:block">Partagez votre météo intérieure en toute bienveillance</p>
+                </div>
+            </div>
+
+            <!-- Current User Badge & Profile Button -->
+            <div class="flex items-center gap-3">
+                <div class="lang-switch flex items-center rounded-full bg-slate-100 border border-slate-200/80 p-0.5 text-xs font-bold" role="group" aria-label="Language">
+                <button type="button" data-lang="fr" onclick="setLang('fr')" class="px-2.5 py-1 rounded-full transition">FR</button>
+                <button type="button" data-lang="en" onclick="setLang('en')" class="px-2.5 py-1 rounded-full transition">EN</button>
+            </div>
+                <div onclick="toggleIdentityModal(true)" class="flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 cursor-pointer transition border border-slate-200/80 group">
+                    <div id="user-avatar" class="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold ring-2 ring-white">
+                        ?
+                    </div>
+                    <div class="text-left">
+                        <span data-i18n="user.connectedAs" class="text-xs text-slate-400 block leading-none">Connecté en tant que</span>
+                        <span id="current-user-display" class="text-xs sm:text-sm font-semibold text-slate-800 leading-none group-hover:text-indigo-600">Invité</span>
+                    </div>
+                    <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition"></i>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8">
+
+        <!-- Bar de sélection de Date (Aujourd'hui, Hier, Datepicker) -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-2">
+                <button onclick="shiftDate(-1)" class="p-2 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-600 transition" data-i18n-title="date.prev" title="Jour précédent">
+                    <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                </button>
+                <div class="text-center px-2">
+                    <div id="date-label-friendly" class="text-xs font-semibold uppercase tracking-wider text-indigo-600">Aujourd'hui</div>
+                    <div id="date-label-full" class="text-sm sm:text-base font-bold text-slate-900">Mercredi 11 Novembre 2026</div>
+                </div>
+                <button onclick="shiftDate(1)" class="p-2 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-600 transition" data-i18n-title="date.next" title="Jour suivant">
+                    <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="flex items-center gap-2 w-full md:w-auto justify-end">
+                <button onclick="goToToday()" class="text-xs px-3 py-2 rounded-xl font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
+                    <span data-i18n="date.today">Aujourd'hui</span>
+                </button>
+                <div class="relative flex items-center">
+                    <input type="date" id="calendar-picker" onchange="handleDatePickerChange(this.value)" class="text-xs sm:text-sm border border-slate-200 rounded-xl px-3 py-2 text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 cursor-pointer">
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 1 : Mood Form (Post / Update my mood) -->
+        <section class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-64 h-64 bg-indigo-50/50 rounded-full blur-3xl -z-10 pointer-events-none"></div>
+
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
+                <div>
+                    <h2 class="text-lg sm:text-xl font-bold text-slate-900 flex items-center gap-2">
+                        <span data-i18n="form.title">Mon humeur du jour</span>
+                        <span id="form-mode-badge" data-i18n="form.saved" class="text-xs bg-emerald-50 text-emerald-700 font-semibold px-2.5 py-0.5 rounded-full border border-emerald-200/50 hidden">Enregistré</span>
+                    </h2>
+                    <p data-i18n="form.subtitle" class="text-sm text-slate-500">Exprime comment tu te sens aujourd'hui avec l'équipe.</p>
+                </div>
+                <span id="active-user-hint" class="text-xs text-slate-400 italic"></span>
+            </div>
+
+            <form id="mood-form" onsubmit="handleMoodSubmit(event)">
+                <!-- Mood Options Grid -->
+                <div class="mb-6">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3" data-i18n="form.chooseMood">Choisis ton ambiance :</label>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3" id="mood-options-container">
+                        <!-- Injected by JS -->
+                    </div>
+                </div>
+
+                <!-- Comment Input -->
+                <div class="mb-5">
+                    <label for="mood-comment-input" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
+                        <span data-i18n="form.commentLabel">Un petit mot ou contexte (facultatif) :</span>
+                    </label>
+                    <div class="relative">
+                        <textarea id="mood-comment-input" rows="2" maxlength="280"
+                            data-i18n-placeholder="form.placeholder" placeholder="Comment se passe ta journée ? Un succès, un blocage ou un café à partager ?"
+                            class="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition text-sm text-slate-800 placeholder-slate-400 resize-none"></textarea>
+                        <div class="text-[11px] text-slate-400 text-right mt-1 pr-1" id="char-counter">0 / 280</div>
+                    </div>
+                </div>
+
+                <!-- Submit and Clear buttons -->
+                <div class="flex items-center justify-between gap-3 pt-2">
+                    <button type="button" id="delete-mood-btn" onclick="handleDeleteMyMood()" class="text-xs text-rose-600 hover:text-rose-700 font-semibold py-2 px-3 rounded-xl hover:bg-rose-50 transition hidden flex items-center gap-1.5">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        <span data-i18n="form.delete">Effacer mon humeur du jour</span>
+                    </button>
+                    <button type="submit" id="save-mood-btn" class="ml-auto flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2.5 rounded-xl shadow-md shadow-indigo-200 transition">
+                        <i data-lucide="send" class="w-4 h-4"></i>
+                        <span id="submit-button-text">Publier mon mood</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Section 2 : Team Mood Overview / Stats -->
+        <section class="bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+            <div class="relative z-10">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-6 border-b border-indigo-800/60">
+                    <div>
+                        <div data-i18n="stats.title" class="text-xs uppercase tracking-widest text-indigo-300 font-bold mb-1">Météo de l'équipe</div>
+                        <h3 class="text-xl sm:text-2xl font-bold flex items-center gap-2.5">
+                            <span id="team-vibe-emoji">✨</span>
+                            <span id="team-vibe-title">Humeur générale</span>
+                        </h3>
+                    </div>
+                    <div class="flex items-center gap-4 bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-white/10 w-fit">
+                        <div>
+                            <div data-i18n="stats.members" class="text-xs text-indigo-200">Membres ayant partagé</div>
+                            <div class="text-lg font-extrabold text-white" id="stats-total-count">0 personne(s)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Breakdown bars -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3" id="stats-breakdown-container">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3 : Team Feed (Cards) -->
+        <section class="space-y-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <h3 data-i18n="feed.title" class="text-lg sm:text-xl font-bold text-slate-900">Les humeurs de la journée</h3>
+                    <span id="feed-count-badge" class="text-xs bg-slate-200 text-slate-700 font-bold px-2 py-0.5 rounded-full">0</span>
+                    <span id="sync-status" class="text-[11px] text-slate-400"></span>
+                </div>
+                <!-- Filter by Mood -->
+                <div class="flex items-center gap-2">
+                    <select id="feed-filter-mood" onchange="renderTeamFeed()" class="text-xs font-semibold bg-white border border-slate-200 text-slate-600 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-100">
+                        <option value="ALL" data-i18n="feed.all">Tous les moods</option>
+                        <!-- Dynamic options -->
+                    </select>
+                </div>
+            </div>
+
+            <!-- Feed list -->
+            <div id="feed-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Cards injected here -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="feed-empty-state" class="hidden bg-white border border-dashed border-slate-200 rounded-3xl p-12 text-center">
+                <div class="w-16 h-16 bg-indigo-50 text-indigo-500 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
+                    🌱
+                </div>
+                <h4 data-i18n="feed.emptyTitle" class="text-base font-bold text-slate-800 mb-1">Aucune humeur partagée pour cette date</h4>
+                <p data-i18n="feed.emptyDesc" class="text-sm text-slate-500 max-w-sm mx-auto mb-4">Sois la première personne de l'équipe à dire comment tu te sens aujourd'hui !</p>
+                <button onclick="document.getElementById('mood-comment-input').focus()" class="text-xs bg-indigo-600 text-white font-semibold px-4 py-2 rounded-xl hover:bg-indigo-700 transition">
+                    <span data-i18n="feed.share">Partager maintenant</span>
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-auto border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-400">
+        <p data-i18n="footer.text">Team Mood Tracker • Prendre soin du collectif jour après jour • Données partagées avec toute l'équipe</p>
+    </footer>
+
+    <!-- App Logic Script -->
+    <script>
+        /* ==========================================================================
+           LANGUES (FR / EN)
+           ========================================================================== */
+        const SUPPORTED_LANGS = ['fr', 'en'];
+        const I18N = {
+            fr: {
+                'page.title': "Team Mood Tracker | L'humeur de l'équipe",
+                'app.tagline': "Partagez votre météo intérieure en toute bienveillance",
+                'user.connectedAs': "Connecté en tant que",
+                'user.setName': "Définir mon nom",
+                'user.hintNone': "Veuillez définir un prénom pour publier",
+                'user.hint': "Publication sous le nom de : {name}",
+                'id.title': "Qui es-tu dans l'équipe ?",
+                'id.desc': "Entre ton prénom pour partager ton humeur et réagir aux messages de tes collègues.",
+                'id.label': "Ton prénom ou pseudo",
+                'id.placeholder': "Ex: Thomas, Sarah, Alex...",
+                'id.cancel': "Annuler",
+                'id.continue': "Continuer",
+                'date.prev': "Jour précédent",
+                'date.next': "Jour suivant",
+                'date.today': "Aujourd'hui",
+                'date.yesterday': "Hier",
+                'date.history': "Historique",
+                'form.title': "Mon humeur du jour",
+                'form.saved': "Enregistré pour cette date",
+                'form.subtitle': "Exprime comment tu te sens aujourd'hui avec l'équipe.",
+                'form.chooseMood': "Choisis ton ambiance :",
+                'form.commentLabel': "Un petit mot ou contexte (facultatif) :",
+                'form.placeholder': "Comment se passe ta journée ? Un succès, un blocage ou un café à partager ?",
+                'form.delete': "Effacer mon humeur du jour",
+                'form.publish': "Publier mon mood",
+                'form.update': "Mettre à jour mon mood",
+                'stats.title': "Météo de l'équipe",
+                'stats.members': "Membres ayant partagé",
+                'stats.count.one': "{n} participant",
+                'stats.count.other': "{n} participants",
+                'stats.loading': "Chargement…",
+                'stats.noData': "Aucune donnée",
+                'stats.pers': "pers.",
+                'vibe.great': "Ambiance au sommet ! L'équipe cartonne",
+                'vibe.good': "Bonne dynamique & sérénité",
+                'vibe.tired': "Un peu de fatigue dans l'air",
+                'vibe.support': "Besoin de soutien & d'entraide",
+                'feed.title': "Les humeurs de la journée",
+                'feed.all': "Tous les moods",
+                'feed.loading': "Chargement des humeurs…",
+                'feed.emptyTitle': "Aucune humeur partagée pour cette date",
+                'feed.emptyDesc': "Sois la première personne de l'équipe à dire comment tu te sens aujourd'hui !",
+                'feed.share': "Partager maintenant",
+                'feed.me': "Moi",
+                'feed.noComment': "A partagé son humeur sans commentaire supplémentaire.",
+                'feed.allDay': "Journée",
+                'feed.quote': "« {text} »",
+                'react.title': "Réactions",
+                'react.perPerson': "(1 par personne)",
+                'react.you': "Toi",
+                'react.with': "Réagir avec {label}",
+                'react.heart': "Cœur",
+                'react.clap': "Bravo",
+                'react.coffee': "Café de soutien",
+                'react.strong': "Force",
+                'react.hug': "Câlin",
+                'sync.live': "En direct · mis à jour à {time}",
+                'sync.lost': "Connexion perdue, nouvel essai…",
+                'toast.welcome': "Bienvenue {name} ! 👋",
+                'toast.pickMood': "Veuillez sélectionner une humeur avec un emoji !",
+                'toast.updated': "Votre humeur du jour a été mise à jour ! ✨",
+                'toast.shared': "Humeur partagée avec l'équipe ! 🚀",
+                'toast.saveFail': "Impossible d'enregistrer, réessaie.",
+                'toast.confirmDelete': "Voulez-vous supprimer votre humeur pour cette date ?",
+                'toast.deleted': "Votre humeur a été retirée.",
+                'toast.deleteFail': "Impossible de supprimer, réessaie.",
+                'toast.reactRemoved': "Réaction retirée",
+                'toast.reactAdded': "Réaction {emoji} ajoutée !",
+                'toast.reactFail': "Réaction non enregistrée.",
+                'err.http': "Erreur {status}",
+                'err.network': "Connexion impossible, réessaie.",
+                'footer.text': "Team Mood Tracker • Prendre soin du collectif jour après jour • Données partagées avec toute l'équipe",
+                'mood.top.name': "Au top", 'mood.top.desc': "Productif & motivé",
+                'mood.good.name': "Bonne humeur", 'mood.good.desc': "En forme & souriant",
+                'mood.zen.name': "Zen & Focus", 'mood.zen.desc': "Calme & concentré",
+                'mood.coffee.name': "Mode café", 'mood.coffee.desc': "Besoin d'énergie",
+                'mood.stressed.name': "Sous l'eau", 'mood.stressed.desc': "Stressé / Débordé",
+                'mood.sick.name': "Pas en forme", 'mood.sick.desc': "Fatigue ou malade"
+            },
+            en: {
+                'page.title': "Team Mood Tracker | How the team feels",
+                'app.tagline': "Share your inner weather, kindly",
+                'user.connectedAs': "Signed in as",
+                'user.setName': "Set my name",
+                'user.hintNone': "Please set a name to post",
+                'user.hint': "Posting as: {name}",
+                'id.title': "Who are you on the team?",
+                'id.desc': "Enter your first name to share your mood and react to your teammates' posts.",
+                'id.label': "Your first name or nickname",
+                'id.placeholder': "E.g. Thomas, Sarah, Alex...",
+                'id.cancel': "Cancel",
+                'id.continue': "Continue",
+                'date.prev': "Previous day",
+                'date.next': "Next day",
+                'date.today': "Today",
+                'date.yesterday': "Yesterday",
+                'date.history': "History",
+                'form.title': "My mood today",
+                'form.saved': "Saved for this date",
+                'form.subtitle': "Tell the team how you're feeling today.",
+                'form.chooseMood': "Pick your vibe:",
+                'form.commentLabel': "A short note or context (optional):",
+                'form.placeholder': "How's your day going? A win, a blocker, or a coffee to share?",
+                'form.delete': "Clear my mood for today",
+                'form.publish': "Post my mood",
+                'form.update': "Update my mood",
+                'stats.title': "Team weather",
+                'stats.members': "Members who shared",
+                'stats.count.one': "{n} participant",
+                'stats.count.other': "{n} participants",
+                'stats.loading': "Loading…",
+                'stats.noData': "No data",
+                'stats.pers': "ppl",
+                'vibe.great': "Spirits are sky-high! The team is crushing it",
+                'vibe.good': "Good momentum & calm",
+                'vibe.tired': "A bit of tiredness in the air",
+                'vibe.support': "Time for some support & teamwork",
+                'feed.title': "The day's moods",
+                'feed.all': "All moods",
+                'feed.loading': "Loading moods…",
+                'feed.emptyTitle': "No mood shared for this date",
+                'feed.emptyDesc': "Be the first on the team to say how you're feeling today!",
+                'feed.share': "Share now",
+                'feed.me': "Me",
+                'feed.noComment': "Shared their mood without any extra comment.",
+                'feed.allDay': "All day",
+                'feed.quote': "“{text}”",
+                'react.title': "Reactions",
+                'react.perPerson': "(1 per person)",
+                'react.you': "You",
+                'react.with': "React with {label}",
+                'react.heart': "Heart",
+                'react.clap': "Well done",
+                'react.coffee': "Supportive coffee",
+                'react.strong': "Strength",
+                'react.hug': "Hug",
+                'sync.live': "Live · updated at {time}",
+                'sync.lost': "Connection lost, retrying…",
+                'toast.welcome': "Welcome {name}! 👋",
+                'toast.pickMood': "Please pick a mood first!",
+                'toast.updated': "Your mood has been updated! ✨",
+                'toast.shared': "Mood shared with the team! 🚀",
+                'toast.saveFail': "Couldn't save, please try again.",
+                'toast.confirmDelete': "Delete your mood for this date?",
+                'toast.deleted': "Your mood has been removed.",
+                'toast.deleteFail': "Couldn't delete, please try again.",
+                'toast.reactRemoved': "Reaction removed",
+                'toast.reactAdded': "Reaction {emoji} added!",
+                'toast.reactFail': "Reaction not saved.",
+                'err.http': "Error {status}",
+                'err.network': "Can't reach the server, please try again.",
+                'footer.text': "Team Mood Tracker • Caring for the team, day after day • Data shared with the whole team",
+                'mood.top.name': "On fire", 'mood.top.desc': "Productive & motivated",
+                'mood.good.name': "Good mood", 'mood.good.desc': "Feeling great & smiling",
+                'mood.zen.name': "Zen & Focus", 'mood.zen.desc': "Calm & focused",
+                'mood.coffee.name': "Coffee mode", 'mood.coffee.desc': "Need some energy",
+                'mood.stressed.name': "Swamped", 'mood.stressed.desc': "Stressed / Overwhelmed",
+                'mood.sick.name': "Under the weather", 'mood.sick.desc': "Tired or sick"
+            }
+        };
+
+        function readStoredLang() {
+            try { return localStorage.getItem('tmt_lang') || ''; } catch (e) { return ''; }
+        }
+        function detectLang() {
+            const stored = readStoredLang();
+            if (SUPPORTED_LANGS.includes(stored)) return stored;
+            return (navigator.language || '').toLowerCase().startsWith('fr') ? 'fr' : 'en';
+        }
+
+        let currentLang = detectLang();
+
+        function t(key, vars) {
+            let str = (I18N[currentLang] && I18N[currentLang][key]);
+            if (str === undefined) str = I18N.fr[key];
+            if (str === undefined) return key;
+            if (vars) str = str.replace(/\{(\w+)\}/g, (_, k) => (vars[k] !== undefined ? vars[k] : ''));
+            return str;
+        }
+
+        function getLocale() {
+            return currentLang === 'fr' ? 'fr-FR' : 'en-GB';
+        }
+
+        /* ==========================================================================
+           CONFIG & MOOD DEFINITIONS
+           ========================================================================== */
+        const MOODS = [
+            { id: 'top', emoji: '🚀',
+              color: 'from-amber-400 to-orange-500', border: 'border-amber-200', bg: 'bg-amber-50', text: 'text-amber-800', score: 5 },
+            { id: 'good', emoji: '😊',
+              color: 'from-emerald-400 to-teal-500', border: 'border-emerald-200', bg: 'bg-emerald-50', text: 'text-emerald-800', score: 4 },
+            { id: 'zen', emoji: '🧘',
+              color: 'from-sky-400 to-blue-500', border: 'border-sky-200', bg: 'bg-sky-50', text: 'text-sky-800', score: 4 },
+            { id: 'coffee', emoji: '☕',
+              color: 'from-amber-600 to-amber-700', border: 'border-amber-200', bg: 'bg-amber-50/70', text: 'text-amber-900', score: 3 },
+            { id: 'stressed', emoji: '🤯',
+              color: 'from-rose-500 to-red-600', border: 'border-rose-200', bg: 'bg-rose-50', text: 'text-rose-800', score: 2 },
+            { id: 'sick', emoji: '🤒',
+              color: 'from-slate-500 to-slate-700', border: 'border-slate-200', bg: 'bg-slate-100', text: 'text-slate-800', score: 1 }
+        ];
+        // name / desc suivent automatiquement la langue active
+        MOODS.forEach(m => {
+            Object.defineProperty(m, 'name', { get: () => t(`mood.${m.id}.name`) });
+            Object.defineProperty(m, 'desc', { get: () => t(`mood.${m.id}.desc`) });
+        });
+
+        const AVAILABLE_REACTIONS = [
+            { emoji: '❤️', key: 'heart' },
+            { emoji: '🙌', key: 'clap' },
+            { emoji: '☕', key: 'coffee' },
+            { emoji: '💪', key: 'strong' },
+            { emoji: '🤗', key: 'hug' }
+        ];
+
+        const POLL_INTERVAL_MS = 10000;
+
+        /* ==========================================================================
+           STATE
+           Les humeurs et réactions vivent sur le serveur (partagées par toute
+           l'équipe). Seul le prénom est mémorisé dans ce navigateur.
+           ========================================================================== */
+        function readStoredName() {
+            try { return localStorage.getItem('tmt_username') || ''; } catch (e) { return ''; }
+        }
+        function storeName(name) {
+            try { localStorage.setItem('tmt_username', name); } catch (e) { /* ignore */ }
+        }
+
+        let currentUser = readStoredName();
+        let selectedDateStr = getTodayDateString();
+        let selectedMoodId = null;
+
+        let dayEntries = [];
+        let hasLoaded = false;
+        let loadSeq = 0;
+        let lastSnapshot = '';
+        let isSaving = false;
+
+        function getTodayDateString() {
+            return formatDateToYYYYMMDD(new Date());
+        }
+
+        function formatDateToYYYYMMDD(d) {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        }
+
+        function sameName(a, b) {
+            return String(a || '').toLowerCase() === String(b || '').toLowerCase();
+        }
+
+        /* ==========================================================================
+           API
+           ========================================================================== */
+        async function api(path, options = {}) {
+            let res;
+            try {
+                res = await fetch(path, {
+                    headers: { 'Content-Type': 'application/json' },
+                    ...options
+                });
+            } catch (e) {
+                throw new Error(t('err.network'));
+            }
+            let data = null;
+            try { data = await res.json(); } catch (e) { /* no body */ }
+            if (!res.ok) {
+                throw new Error(t('err.http', { status: res.status }));
+            }
+            return data;
+        }
+
+        async function loadDay({ sync = false } = {}) {
+            const date = selectedDateStr;
+            const seq = ++loadSeq;
+            try {
+                const data = await api(`/api/day?date=${encodeURIComponent(date)}`);
+                if (seq !== loadSeq) return; // une requête plus récente a pris le relais
+
+                const snapshot = date + '|' + JSON.stringify(data.entries);
+                const changed = snapshot !== lastSnapshot || !hasLoaded;
+                lastSnapshot = snapshot;
+                dayEntries = data.entries;
+                hasLoaded = true;
+
+                if (changed) renderAll();
+                if (sync) syncMyMoodForm();
+                setSyncStatus(true);
+            } catch (err) {
+                if (seq !== loadSeq) return;
+                console.error(err);
+                setSyncStatus(false);
+                if (!hasLoaded) renderAll();
+            }
+        }
+
+        let lastSyncOk = null;
+        let lastSyncTime = null;
+
+        function setSyncStatus(ok, refreshOnly = false) {
+            const el = document.getElementById('sync-status');
+            if (!el) return;
+            if (ok && !refreshOnly) lastSyncTime = new Date();
+            lastSyncOk = ok;
+            if (ok) {
+                const time = (lastSyncTime || new Date()).toLocaleTimeString(getLocale(), { hour: '2-digit', minute: '2-digit' });
+                el.className = 'text-[11px] text-emerald-600 font-medium flex items-center gap-1.5';
+                el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span><span>${escapeHtml(t('sync.live', { time }))}</span>`;
+            } else {
+                el.className = 'text-[11px] text-rose-600 font-medium flex items-center gap-1.5';
+                el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span><span>${escapeHtml(t('sync.lost'))}</span>`;
+            }
+        }
+
+        function startPolling() {
+            setInterval(() => {
+                if (!document.hidden) loadDay();
+            }, POLL_INTERVAL_MS);
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) loadDay();
+            });
+        }
+
+        /* ==========================================================================
+           TOAST NOTIFICATIONS
+           ========================================================================== */
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            const isSuccess = type === 'success';
+            const icon = isSuccess ? 'check-circle' : 'info';
+            const bgClass = isSuccess ? 'bg-slate-900 text-white' : 'bg-rose-600 text-white';
+
+            toast.className = `${bgClass} pointer-events-auto px-4 py-3 rounded-2xl shadow-xl flex items-center gap-3 text-sm font-medium transform transition-all duration-300 translate-y-2 opacity-0`;
+            toast.innerHTML = `
+                <i data-lucide="${icon}" class="w-4 h-4 ${isSuccess ? 'text-emerald-400' : 'text-white'}"></i>
+                <span>${escapeHtml(message)}</span>
+            `;
+
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', '-translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3200);
+        }
+
+        /* ==========================================================================
+           INITIALIZATION & IDENTITY
+           ========================================================================== */
+        function applyLanguage() {
+            document.documentElement.lang = currentLang;
+            document.title = t('page.title');
+            document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { el.placeholder = t(el.dataset.i18nPlaceholder); });
+            document.querySelectorAll('[data-i18n-title]').forEach(el => { el.title = t(el.dataset.i18nTitle); });
+            document.querySelectorAll('[data-lang]').forEach(btn => {
+                const active = btn.dataset.lang === currentLang;
+                btn.classList.toggle('bg-white', active);
+                btn.classList.toggle('text-indigo-600', active);
+                btn.classList.toggle('shadow-sm', active);
+                btn.classList.toggle('text-slate-500', !active);
+                btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+            });
+        }
+
+        function setLang(lang) {
+            if (!SUPPORTED_LANGS.includes(lang) || lang === currentLang) return;
+            currentLang = lang;
+            try { localStorage.setItem('tmt_lang', lang); } catch (e) { /* ignore */ }
+            applyLanguage();
+            updateDateUI();
+            updateUserDisplay();
+            updateFormLabels();
+            initMoodOptionsUI();
+            selectMood(selectedMoodId);
+            initFeedFilterOptions();
+            if (lastSyncOk !== null) setSyncStatus(lastSyncOk, true);
+            renderAll();
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            applyLanguage();
+            initIdentity();
+            initMoodOptionsUI();
+            initFeedFilterOptions();
+            setupCharCounter();
+            setupReactionClicks();
+            updateDateUI();
+            renderAll();
+            loadDay({ sync: true });
+            startPolling();
+        });
+
+        function initIdentity() {
+            if (!currentUser) {
+                toggleIdentityModal(true, false);
+            } else {
+                updateUserDisplay();
+            }
+        }
+
+        function toggleIdentityModal(show, cancellable = true) {
+            const modal = document.getElementById('identity-modal');
+            const cancelBtn = document.getElementById('identity-cancel-btn');
+            const input = document.getElementById('user-name-input');
+
+            if (show) {
+                input.value = currentUser || '';
+                cancelBtn.classList.toggle('hidden', !cancellable && !currentUser);
+                modal.classList.remove('hidden');
+                setTimeout(() => input.focus(), 100);
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        function handleSaveIdentity(e) {
+            e.preventDefault();
+            const input = document.getElementById('user-name-input');
+            const name = input.value.trim().slice(0, 30);
+
+            if (!name) return;
+
+            currentUser = name;
+            storeName(currentUser);
+            updateUserDisplay();
+            toggleIdentityModal(false);
+            showToast(t('toast.welcome', { name: currentUser }));
+            syncMyMoodForm();
+            renderAll();
+        }
+
+        function updateUserDisplay() {
+            const displayEl = document.getElementById('current-user-display');
+            const avatarEl = document.getElementById('user-avatar');
+            const hintEl = document.getElementById('active-user-hint');
+
+            if (currentUser) {
+                displayEl.textContent = currentUser;
+                avatarEl.textContent = currentUser.charAt(0).toUpperCase();
+                hintEl.textContent = t('user.hint', { name: currentUser });
+            } else {
+                displayEl.textContent = t('user.setName');
+                avatarEl.textContent = '?';
+                hintEl.textContent = t('user.hintNone');
+            }
+        }
+
+        /* ==========================================================================
+           MOOD SELECTION UI
+           ========================================================================== */
+        function initMoodOptionsUI() {
+            const container = document.getElementById('mood-options-container');
+            container.innerHTML = MOODS.map(m => `
+                <button type="button" onclick="selectMood('${m.id}')" id="mood-btn-${m.id}"
+                    class="mood-card relative flex flex-col items-center text-center p-3 sm:p-4 rounded-2xl border-2 border-slate-100 hover:border-indigo-300 bg-white hover:bg-slate-50/50 cursor-pointer transition text-left group">
+                    <span class="text-3xl sm:text-4xl mb-2 transition transform group-hover:scale-110">${m.emoji}</span>
+                    <span class="text-xs sm:text-sm font-bold text-slate-800 block">${m.name}</span>
+                    <span class="text-[11px] text-slate-400 font-normal leading-snug mt-0.5 line-clamp-1">${m.desc}</span>
+                    <div class="selection-check absolute top-2 right-2 w-4 h-4 rounded-full bg-indigo-600 text-white text-[10px] items-center justify-center hidden">
+                        ✓
+                    </div>
+                </button>
+            `).join('');
+        }
+
+        function initFeedFilterOptions() {
+            const select = document.getElementById('feed-filter-mood');
+            const current = select.value || 'ALL';
+            select.querySelectorAll('option:not([value="ALL"])').forEach(o => o.remove());
+            MOODS.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.id;
+                opt.textContent = `${m.emoji} ${m.name}`;
+                select.appendChild(opt);
+            });
+            select.value = current;
+        }
+
+        function selectMood(moodId) {
+            selectedMoodId = moodId;
+            MOODS.forEach(m => {
+                const btn = document.getElementById(`mood-btn-${m.id}`);
+                const check = btn.querySelector('.selection-check');
+                if (m.id === moodId) {
+                    btn.classList.add('border-indigo-600', 'bg-indigo-50/40', 'ring-2', 'ring-indigo-100');
+                    btn.classList.remove('border-slate-100', 'bg-white');
+                    check.classList.remove('hidden');
+                    check.classList.add('flex');
+                } else {
+                    btn.classList.remove('border-indigo-600', 'bg-indigo-50/40', 'ring-2', 'ring-indigo-100');
+                    btn.classList.add('border-slate-100', 'bg-white');
+                    check.classList.add('hidden');
+                    check.classList.remove('flex');
+                }
+            });
+        }
+
+        function setupCharCounter() {
+            const textarea = document.getElementById('mood-comment-input');
+            const counter = document.getElementById('char-counter');
+            textarea.addEventListener('input', () => {
+                counter.textContent = `${textarea.value.length} / 280`;
+            });
+        }
+
+        /* ==========================================================================
+           DATE NAVIGATION
+           ========================================================================== */
+        function changeDate(newDateStr) {
+            selectedDateStr = newDateStr;
+            hasLoaded = false;
+            dayEntries = [];
+            lastSnapshot = '';
+            updateDateUI();
+            syncMyMoodForm();
+            renderAll();
+            loadDay({ sync: true });
+        }
+
+        function handleDatePickerChange(val) {
+            if (!val) return;
+            changeDate(val);
+        }
+
+        function shiftDate(offsetDays) {
+            const parts = selectedDateStr.split('-');
+            const d = new Date(parts[0], parts[1] - 1, parts[2]);
+            d.setDate(d.getDate() + offsetDays);
+            changeDate(formatDateToYYYYMMDD(d));
+        }
+
+        function goToToday() {
+            changeDate(getTodayDateString());
+        }
+
+        function updateDateUI() {
+            document.getElementById('calendar-picker').value = selectedDateStr;
+
+            const parts = selectedDateStr.split('-');
+            const targetDate = new Date(parts[0], parts[1] - 1, parts[2]);
+            const todayStr = getTodayDateString();
+
+            const friendlyLabel = document.getElementById('date-label-friendly');
+            if (selectedDateStr === todayStr) {
+                friendlyLabel.textContent = t('date.today');
+                friendlyLabel.className = "text-xs font-semibold uppercase tracking-wider text-emerald-600";
+            } else {
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                if (selectedDateStr === formatDateToYYYYMMDD(yesterday)) {
+                    friendlyLabel.textContent = t('date.yesterday');
+                    friendlyLabel.className = "text-xs font-semibold uppercase tracking-wider text-amber-600";
+                } else {
+                    friendlyLabel.textContent = t('date.history');
+                    friendlyLabel.className = "text-xs font-semibold uppercase tracking-wider text-slate-400";
+                }
+            }
+
+            const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+            const fullDateFormatted = targetDate.toLocaleDateString(getLocale(), options);
+            document.getElementById('date-label-full').textContent = capitalize(fullDateFormatted);
+        }
+
+        /* ==========================================================================
+           FORM SUBMIT & SYNCHRONIZATION
+           ========================================================================== */
+        function getDayEntries() {
+            return dayEntries;
+        }
+
+        function getMyEntryForSelectedDate() {
+            if (!currentUser) return null;
+            return dayEntries.find(e => sameName(e.userName, currentUser)) || null;
+        }
+
+        function syncMyMoodForm() {
+            const myEntry = getMyEntryForSelectedDate();
+            const badge = document.getElementById('form-mode-badge');
+            const deleteBtn = document.getElementById('delete-mood-btn');
+            const textarea = document.getElementById('mood-comment-input');
+
+            if (myEntry) {
+                selectMood(myEntry.moodId);
+                textarea.value = myEntry.comment || '';
+                badge.classList.remove('hidden');
+                deleteBtn.classList.remove('hidden');
+            } else {
+                selectMood(null);
+                textarea.value = '';
+                badge.classList.add('hidden');
+                deleteBtn.classList.add('hidden');
+            }
+            updateFormLabels();
+            document.getElementById('char-counter').textContent = `${textarea.value.length} / 280`;
+        }
+
+        function updateFormLabels() {
+            const hasEntry = !!getMyEntryForSelectedDate();
+            document.getElementById('submit-button-text').textContent = t(hasEntry ? 'form.update' : 'form.publish');
+        }
+
+        async function handleMoodSubmit(e) {
+            e.preventDefault();
+            if (isSaving) return;
+
+            if (!currentUser) {
+                toggleIdentityModal(true);
+                return;
+            }
+
+            if (!selectedMoodId) {
+                showToast(t('toast.pickMood'), "error");
+                return;
+            }
+
+            const isUpdate = !!getMyEntryForSelectedDate();
+            const comment = document.getElementById('mood-comment-input').value.trim();
+            const btn = document.getElementById('save-mood-btn');
+
+            isSaving = true;
+            btn.disabled = true;
+            btn.classList.add('opacity-60');
+
+            try {
+                await api('/api/mood', {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        date: selectedDateStr,
+                        userName: currentUser,
+                        moodId: selectedMoodId,
+                        comment
+                    })
+                });
+                showToast(t(isUpdate ? 'toast.updated' : 'toast.shared'));
+                await loadDay({ sync: true });
+            } catch (err) {
+                showToast(err.message || t('toast.saveFail'), "error");
+            } finally {
+                isSaving = false;
+                btn.disabled = false;
+                btn.classList.remove('opacity-60');
+            }
+        }
+
+        async function handleDeleteMyMood() {
+            if (!currentUser || !confirm(t('toast.confirmDelete'))) return;
+
+            try {
+                await api('/api/mood', {
+                    method: 'DELETE',
+                    body: JSON.stringify({ date: selectedDateStr, userName: currentUser })
+                });
+                showToast(t('toast.deleted'));
+                await loadDay({ sync: true });
+            } catch (err) {
+                showToast(err.message || t('toast.deleteFail'), "error");
+            }
+        }
+
+        /* ==========================================================================
+           REACTIONS SYSTEM (une par personne et par message)
+           ========================================================================== */
+        function setupReactionClicks() {
+            document.getElementById('feed-list').addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-react-emoji]');
+                if (!btn) return;
+                toggleReaction(btn.dataset.reactOwner, btn.dataset.reactEmoji);
+            });
+        }
+
+        function findMyReaction(entry) {
+            if (!entry.reactions || !currentUser) return null;
+            const key = Object.keys(entry.reactions).find(k => sameName(k, currentUser));
+            return key ? entry.reactions[key] : null;
+        }
+
+        async function toggleReaction(ownerName, emoji) {
+            if (!currentUser) {
+                toggleIdentityModal(true);
+                return;
+            }
+
+            const target = dayEntries.find(e => e.userName === ownerName);
+            if (!target) return;
+
+            const removing = findMyReaction(target) === emoji;
+
+            // Mise à jour immédiate de l'écran, puis confirmation par le serveur
+            if (!target.reactions) target.reactions = {};
+            Object.keys(target.reactions).forEach(k => { if (sameName(k, currentUser)) delete target.reactions[k]; });
+            if (!removing) target.reactions[currentUser] = emoji;
+            renderTeamFeed();
+
+            try {
+                await api('/api/react', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        date: selectedDateStr,
+                        owner: ownerName,
+                        reactor: currentUser,
+                        emoji: removing ? null : emoji
+                    })
+                });
+                showToast(removing ? t('toast.reactRemoved') : t('toast.reactAdded', { emoji }));
+            } catch (err) {
+                showToast(err.message || t('toast.reactFail'), "error");
+            }
+            loadDay();
+        }
+
+        /* ==========================================================================
+           RENDER FUNCTIONS (Feed & Stats)
+           ========================================================================== */
+        function renderAll() {
+            renderStats();
+            renderTeamFeed();
+            lucide.createIcons();
+        }
+
+        function formatEntryTime(entry) {
+            if (!entry.updatedAt) return t('feed.allDay');
+            const d = new Date(entry.updatedAt);
+            if (Number.isNaN(d.getTime())) return t('feed.allDay');
+            return d.toLocaleTimeString(getLocale(), { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function renderStats() {
+            const entries = getDayEntries();
+            const total = entries.length;
+            const pluralForm = new Intl.PluralRules(getLocale()).select(total) === 'one' ? 'one' : 'other';
+            document.getElementById('stats-total-count').textContent = t(`stats.count.${pluralForm}`, { n: total });
+
+            const breakdownContainer = document.getElementById('stats-breakdown-container');
+            const teamVibeTitle = document.getElementById('team-vibe-title');
+            const teamVibeEmoji = document.getElementById('team-vibe-emoji');
+
+            if (total === 0) {
+                teamVibeTitle.textContent = hasLoaded ? t('stats.noData') : t('stats.loading');
+                teamVibeEmoji.textContent = "💤";
+                breakdownContainer.innerHTML = MOODS.map(m => `
+                    <div class="bg-white/5 border border-white/10 rounded-2xl p-3 text-center">
+                        <div class="text-2xl mb-1">${m.emoji}</div>
+                        <div class="text-xs font-semibold text-slate-300">${m.name}</div>
+                        <div class="text-sm font-bold text-white/50 mt-1">0%</div>
+                    </div>
+                `).join('');
+                return;
+            }
+
+            const counts = {};
+            let totalScore = 0;
+            MOODS.forEach(m => counts[m.id] = 0);
+
+            entries.forEach(e => {
+                if (counts[e.moodId] !== undefined) {
+                    counts[e.moodId]++;
+                }
+                const found = MOODS.find(m => m.id === e.moodId);
+                if (found) totalScore += found.score;
+            });
+
+            const avgScore = totalScore / total;
+            if (avgScore >= 4.2) {
+                teamVibeTitle.textContent = t('vibe.great');
+                teamVibeEmoji.textContent = "🔥";
+            } else if (avgScore >= 3.4) {
+                teamVibeTitle.textContent = t('vibe.good');
+                teamVibeEmoji.textContent = "✨";
+            } else if (avgScore >= 2.5) {
+                teamVibeTitle.textContent = t('vibe.tired');
+                teamVibeEmoji.textContent = "☕";
+            } else {
+                teamVibeTitle.textContent = t('vibe.support');
+                teamVibeEmoji.textContent = "🤝";
+            }
+
+            const maxCount = Math.max(...Object.values(counts));
+            breakdownContainer.innerHTML = MOODS.map(m => {
+                const count = counts[m.id] || 0;
+                const pct = Math.round((count / total) * 100);
+                const isDominant = count > 0 && count === maxCount;
+
+                return `
+                    <div class="relative bg-white/5 hover:bg-white/10 border ${isDominant ? 'border-amber-400/60 bg-amber-500/10' : 'border-white/10'} rounded-2xl p-3 text-center transition">
+                        <div class="text-2xl mb-1">${m.emoji}</div>
+                        <div class="text-xs font-medium text-slate-300 truncate">${m.name}</div>
+                        <div class="text-base font-extrabold text-white mt-1">${pct}%</div>
+                        <div class="text-[10px] text-indigo-200">${count} ${t('stats.pers')}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderTeamFeed() {
+            const feedList = document.getElementById('feed-list');
+            const emptyState = document.getElementById('feed-empty-state');
+            const countBadge = document.getElementById('feed-count-badge');
+            const filterVal = document.getElementById('feed-filter-mood').value;
+
+            let entries = getDayEntries();
+
+            countBadge.textContent = entries.length;
+
+            if (!hasLoaded) {
+                feedList.innerHTML = '<p class="text-sm text-slate-400 col-span-full text-center py-10">' + escapeHtml(t('feed.loading')) + '</p>';
+                emptyState.classList.add('hidden');
+                return;
+            }
+
+            if (filterVal !== 'ALL') {
+                entries = entries.filter(e => e.moodId === filterVal);
+            }
+
+            if (entries.length === 0) {
+                feedList.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            feedList.innerHTML = entries.map(entry => {
+                const moodObj = MOODS.find(m => m.id === entry.moodId) || MOODS[1];
+                const isMe = currentUser && sameName(entry.userName, currentUser);
+
+                const reactionsMap = {};
+                if (entry.reactions) {
+                    for (const [reactorName, reactEmoji] of Object.entries(entry.reactions)) {
+                        if (!reactionsMap[reactEmoji]) reactionsMap[reactEmoji] = [];
+                        reactionsMap[reactEmoji].push(reactorName);
+                    }
+                }
+
+                const activeUserReaction = findMyReaction(entry);
+
+                const reactionButtonsHtml = AVAILABLE_REACTIONS.map(r => {
+                    const people = reactionsMap[r.emoji] || [];
+                    const count = people.length;
+                    const isSelectedByMe = activeUserReaction === r.emoji;
+
+                    const tooltipText = count > 0
+                        ? `${people.map(p => sameName(p, currentUser) ? t('react.you') : p).join(', ')}`
+                        : t('react.with', { label: t('react.' + r.key) });
+
+                    return `
+                        <button type="button"
+                            data-react-owner="${escapeHtml(entry.userName)}"
+                            data-react-emoji="${r.emoji}"
+                            title="${escapeHtml(tooltipText)}"
+                            class="group relative inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium border transition ${
+                                isSelectedByMe
+                                    ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-bold ring-1 ring-indigo-200'
+                                    : count > 0
+                                        ? 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                                        : 'bg-white border-dashed border-slate-200 text-slate-400 hover:text-slate-700 hover:border-slate-300'
+                            }">
+                            <span>${r.emoji}</span>
+                            ${count > 0 ? `<span class="text-[11px] font-bold">${count}</span>` : ''}
+
+                            ${count > 0 ? `
+                                <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-30 pointer-events-none">
+                                    <span class="bg-slate-900 text-white text-[10px] font-medium py-1 px-2 rounded-lg whitespace-nowrap shadow-lg">
+                                        ${escapeHtml(tooltipText)}
+                                    </span>
+                                    <span class="w-1.5 h-1.5 bg-slate-900 rotate-45 -mt-0.5"></span>
+                                </span>
+                            ` : ''}
+                        </button>
+                    `;
+                }).join('');
+
+                return `
+                    <div class="bg-white rounded-3xl p-5 sm:p-6 border ${isMe ? 'border-indigo-300 ring-2 ring-indigo-50' : 'border-slate-200'} shadow-sm flex flex-col justify-between hover:shadow-md transition">
+                        <div>
+                            <div class="flex items-start justify-between gap-3 mb-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr ${moodObj.color} text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                                        ${escapeHtml(entry.userName.charAt(0).toUpperCase())}
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-bold text-slate-900 text-base">${escapeHtml(entry.userName)}</span>
+                                            ${isMe ? `<span class="bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-full">${escapeHtml(t('feed.me'))}</span>` : ''}
+                                        </div>
+                                        <span class="text-xs text-slate-400 font-medium">${formatEntryTime(entry)}</span>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl ${moodObj.bg} ${moodObj.text} border ${moodObj.border} text-xs font-bold">
+                                    <span class="text-base leading-none">${moodObj.emoji}</span>
+                                    <span>${moodObj.name}</span>
+                                </div>
+                            </div>
+
+                            <div class="mb-5">
+                                ${entry.comment
+                                    ? `<p class="text-sm text-slate-700 leading-relaxed font-normal bg-slate-50/70 p-3.5 rounded-2xl border border-slate-100">${t('feed.quote', { text: escapeHtml(entry.comment) })}</p>`
+                                    : `<p class="text-xs text-slate-400 italic">${escapeHtml(t('feed.noComment'))}</p>`
+                                }
+                            </div>
+                        </div>
+
+                        <div class="pt-3 border-t border-slate-100">
+                            <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                                <span>${escapeHtml(t('react.title'))}</span>
+                                <span class="text-[10px] text-slate-300">${escapeHtml(t('react.perPerson'))}</span>
+                            </div>
+                            <div class="flex flex-wrap gap-1.5 items-center">
+                                ${reactionButtonsHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        /* ==========================================================================
+           UTILITIES
+           ========================================================================== */
+        function capitalize(s) {
+            if (!s) return '';
+            return s.charAt(0).toUpperCase() + s.slice(1);
+        }
+
+        function escapeHtml(string) {
+            if (!string) return '';
+            const entityMap = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;',
+                '/': '&#x2F;'
+            };
+            return String(string).replace(/[&<>"'\/]/g, s => entityMap[s]);
+        }
+    </script>
+</body>
+</html>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
